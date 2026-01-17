@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CookFlow | The Global Kitchen</title>
+    <style>
+        :root { --primary: #ff4757; --secondary: #2f3542; --success: #2ed573; --bg: #f1f2f6; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--white); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.8s; }
+        .app-card { background: var(--white); width: 90%; max-width: 480px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); padding: 35px; text-align: center; opacity: 0; transition: opacity 1s; }
+        .app-visible { opacity: 1; }
+        .hidden { display: none !important; }
+
+        .lang-grid { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 15px 0; padding: 10px; background: #fafafa; border-radius: 20px; }
+        .lang-flag { font-size: 28px; cursor: pointer; padding: 5px; border: 2px solid transparent; border-radius: 10px; transition: 0.2s; }
+        .active-lang { border-color: var(--primary); background: #fff5f5; }
+        
+        .filter-grid { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .filter-btn { padding: 8px 12px; font-size: 0.8rem; border-radius: 10px; border: none; color: white; cursor: pointer; font-weight: bold; }
+
+        input { padding: 15px; width: 80%; border-radius: 50px; border: 2px solid #eee; outline: none; margin-bottom: 15px; font-size: 1rem; text-align: center; }
+        button { background: var(--primary); color: white; border: none; padding: 14px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; margin: 5px; }
+        .secondary-btn { background: #747d8c; }
+        .save-btn { background: #ffa502; font-size: 0.9rem; }
+        
+        .recipe-img { width: 100%; height: 200px; object-fit: cover; border-radius: 20px; margin: 15px 0; }
+        .step-box { min-height: 140px; font-size: 1.25rem; color: var(--secondary); margin: 20px 0; display: flex; align-items: center; justify-content: center; line-height: 1.5; }
+        #ingList { text-align: left; padding: 0; list-style: none; }
+        #ingList li { background: #fff5f5; margin: 8px 0; padding: 12px; border-radius: 12px; border-left: 5px solid var(--primary); }
+        
+        #fav-container { margin-top: 20px; border-top: 2px dashed #eee; padding-top: 15px; }
+        #fav-list { text-align: left; max-height: 200px; overflow-y: auto; }
+        .fav-item { padding: 12px; background: #f9f9f9; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; }
+        .fav-text { cursor: pointer; flex-grow: 1; font-weight: 500; font-size: 0.9rem; }
+        .delete-btn { color: #ff4757; cursor: pointer; padding: 5px 10px; background: #ffebeb; border-radius: 8px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen"><div style="font-size:100px">🍳</div><h1>CookFlow</h1></div>
+
+    <div id="main-app" class="app-card">
+        <div id="view-search">
+            <div style="font-size: 40px;">🍳</div>
+            <h1 id="ui-title">CookFlow</h1>
+            
+            <div class="filter-grid">
+                <button class="filter-btn" style="background: #2ed573;" onclick="getRecipe('Vegetarian')">🥗 Veggie</button>
+                <button class="filter-btn" style="background: #ffa502;" onclick="getRecipe('Breakfast')">🥞 Breakfast</button>
+                <button class="filter-btn" style="background: #ff6b81;" onclick="getRecipe('Dessert')">🍰 Dessert</button>
+                <button class="filter-btn" style="background: #5352ed;" onclick="getRecipe('Seafood')">🐟 Seafood</button>
+            </div>
+
+            <input type="text" id="searchInput" placeholder="Search dish...">
+            <button id="btn-search" onclick="getRecipe()">Search</button>
+
+            <div class="lang-grid">
+                <span class="lang-flag active-lang" onclick="setLang('en', this)">🇬🇧</span>
+                <span class="lang-flag" onclick="setLang('ar', this)">🇮🇶</span>
+                <span class="lang-flag" onclick="setLang('es', this)">🇪🇸</span>
+                <span class="lang-flag" onclick="setLang('fr', this)">🇫🇷</span>
+                <span class="lang-flag" onclick="setLang('zh', this)">🇨🇳</span>
+                <span class="lang-flag" onclick="setLang('ja', this)">🇯🇵</span>
+                <span class="lang-flag" onclick="setLang('ko', this)">🇰🇷</span>
+            </div>
+
+            <div id="fav-container">
+                <h4 id="ui-favs">My Cookbook 📖</h4>
+                <div id="fav-list"></div>
+            </div>
+        </div>
+
+        <div id="view-ingredients" class="hidden">
+            <h2 id="mealTitle"></h2>
+            <img id="mealImg" class="recipe-img">
+            <p><strong id="ui-ing-head">Ingredients:</strong></p>
+            <ul id="ingList"></ul>
+            <button id="btn-start" onclick="startCooking()">Start Cooking!</button>
+            <br>
+            <button class="save-btn" onclick="saveRecipe()">⭐ Save</button>
+            <button class="secondary-btn" onclick="nextDish()">Next 🔄</button>
+            <button class="secondary-btn" onclick="switchView('view-search')">Back</button>
+        </div>
+
+        <div id="view-steps" class="hidden">
+            <p style="color: var(--primary); font-weight: bold;"><span id="ui-step-label">Step</span> <span id="stepNum">1</span></p>
+            <div class="step-box" id="stepText"></div>
+            <button id="nextBtn" onclick="nextStep()">Next Step →</button>
+        </div>
+
+        <div id="view-congrats" class="hidden">
+            <div style="font-size: 5rem;">👨‍🍳</div>
+            <h1 id="ui-congrats-title">Master Chef!</h1>
+            <button onclick="location.reload()">Restart</button>
+        </div>
+    </div>
+
+<script>
+    const synth = window.speechSynthesis;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let allMeals = [];
+    let mealIndex = 0;
+    let steps = [];
+    let currentStepIndex = 0;
+    let currentLang = 'en';
+    let savedRecipes = JSON.parse(localStorage.getItem('cookflow_favs')) || [];
+
+    const translations = {
+        en: { search: "Search", placeholder: "Search...", ing: "Ingredients:", start: "Start Cooking!", back: "Back", step: "Step", congrats: "Master Chef!", favs: "My Cookbook 📖", load: "Translating...", voice: "en-GB" },
+        ar: { search: "بحث", placeholder: "ابحث...", ing: "المكونات:", start: "ابدأ الطبخ!", back: "رجوع", step: "خطوة", congrats: "شيف محترف!", favs: "كتاب طبخي 📖", load: "جاري الترجمة...", voice: "ar-SA" },
+        es: { search: "Buscar", placeholder: "Buscar...", ing: "Ingredientes:", start: "¡Empezar!", back: "Volver", step: "Paso", congrats: "¡Maestro Chef!", favs: "Mi Libro 📖", load: "Traduciendo...", voice: "es-ES" },
+        fr: { search: "Chercher", placeholder: "Chercher...", ing: "Ingrédients:", start: "Commencer!", back: "Retour", step: "Étape", congrats: "Maître Chef!", favs: "Mon Livre 📖", load: "Traduction...", voice: "fr-FR" },
+        zh: { search: "搜索", placeholder: "搜索...", ing: "食材:", start: "开始烹饪!", back: "返回", step: "步骤", congrats: "大厨!", favs: "我的食谱 📖", load: "翻译中...", voice: "zh-CN" },
+        ja: { search: "検索", placeholder: "検索...", ing: "材料:", start: "料理を開始！", back: "戻る", step: "ステップ", congrats: "マスターシェフ！", favs: "マイレシピ 📖", load: "翻訳中...", voice: "ja-JP" },
+        ko: { search: "검색", placeholder: "검색...", ing: "재료:", start: "요리 시작!", back: "뒤로", step: "단계", congrats: "마스터 셰프!", favs: "나의 요리책 📖", load: "번역 중...", voice: "ko-KR" }
+    };
+
+    function playNote(f, s, d, t="sine") {
+        const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        osc.type = t; osc.connect(g); g.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(f, s); g.gain.setValueAtTime(0.1, s);
+        g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+        osc.start(s); osc.stop(s + d);
+    }
+    function playStartJingle() { const n = audioCtx.currentTime; playNote(523, n, 0.6); playNote(392, n+0.4, 0.6); playNote(440, n+0.8, 1); }
+    function playVictoryJingle() { const n = audioCtx.currentTime; [523, 659, 783, 1046].forEach((f, i) => playNote(f, n+(i*0.1), 0.5, "square")); }
+
+    async function translate(text, target) {
+        if (target === 'en' || !text) return text;
+        try {
+            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${target}&dt=t&q=${encodeURI(text)}`);
+            const d = await res.json(); return d[0].map(i => i[0]).join('');
+        } catch (e) { return text; }
+    }
+
+    function setLang(lang, el) {
+        currentLang = lang; const t = translations[lang];
+        document.getElementById('btn-search').innerText = t.search;
+        document.getElementById('searchInput').placeholder = t.placeholder;
+        document.getElementById('ui-ing-head').innerText = t.ing;
+        document.getElementById('btn-start').innerText = t.start;
+        document.getElementById('ui-step-label').innerText = t.step;
+        document.getElementById('ui-favs').innerText = t.favs;
+        document.querySelectorAll('.lang-flag').forEach(f => f.classList.remove('active-lang'));
+        el.classList.add('active-lang');
+    }
+
+    async function getRecipe(cat = null) {
+        const q = document.getElementById('searchInput').value;
+        let url = cat ? `https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}` : `https://www.themealdb.com/api/json/v1/1/search.php?s=${q}`;
+        const res = await fetch(url); const d = await res.json();
+        if (d.meals) { allMeals = d.meals; mealIndex = 0; displayMeal(allMeals[0], !!cat); }
+        else alert("No results!");
+    }
+
+    async function displayMeal(meal, isCat) {
+        let m = meal;
+        if (isCat || !m.strInstructions) {
+            const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
+            const d = await res.json(); m = d.meals[0];
+        }
+        document.getElementById('ingList').innerHTML = `<li>${translations[currentLang].load}</li>`;
+        switchView('view-ingredients');
+        
+        // Translate & Set Title
+        const transTitle = await translate(m.strMeal, currentLang);
+        document.getElementById('mealTitle').innerText = transTitle;
+        document.getElementById('mealImg').src = m.strMealThumb;
+        
+        let ings = "";
+        for (let i = 1; i <= 20; i++) {
+            if (m[`strIngredient${i}`]) {
+                const line = await translate(`${m[`strMeasure${i}`]} ${m[`strIngredient${i}`]}`, currentLang);
+                ings += `<li>${line}</li>`;
+            }
+        }
+        document.getElementById('ingList').innerHTML = ings;
+        const raw = m.strInstructions.split(/[\r\n.]+/).filter(s => s.trim().length > 5);
+        steps = await Promise.all(raw.map(s => translate(s, currentLang)));
+        speak(transTitle);
+    }
+
+    function saveRecipe() {
+        const name = document.getElementById('mealTitle').innerText;
+        if (!savedRecipes.includes(name)) {
+            savedRecipes.push(name);
+            localStorage.setItem('cookflow_favs', JSON.stringify(savedRecipes));
+            updateFavUI();
+        }
+    }
+
+    function deleteRecipe(name) {
+        savedRecipes = savedRecipes.filter(r => r !== name);
+        localStorage.setItem('cookflow_favs', JSON.stringify(savedRecipes));
+        updateFavUI();
+    }
+
+    function updateFavUI() {
+        const list = document.getElementById('fav-list');
+        list.innerHTML = savedRecipes.map(r => `
+            <div class="fav-item">
+                <span class="fav-text" onclick="document.getElementById('searchInput').value='${r}';getRecipe()">${r}</span>
+                <span class="delete-btn" onclick="deleteRecipe('${r}')">🗑️</span>
+            </div>
+        `).join('');
+    }
+
+    function speak(t) { synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = translations[currentLang].voice; synth.speak(u); }
+    function nextDish() { mealIndex = (mealIndex + 1) % allMeals.length; displayMeal(allMeals[mealIndex], true); }
+    function startCooking() { currentStepIndex = 0; switchView('view-steps'); showStep(); }
+    function showStep() {
+        document.getElementById('stepNum').innerText = currentStepIndex + 1;
+        document.getElementById('stepText').innerText = steps[currentStepIndex];
+        speak(steps[currentStepIndex]);
+        document.getElementById('nextBtn').innerText = (currentStepIndex === steps.length - 1) ? "🏁" : "Next →";
+    }
+    function nextStep() {
+        if (currentStepIndex < steps.length - 1) { currentStepIndex++; showStep(); }
+        else { switchView('view-congrats'); playVictoryJingle(); }
+    }
+    function switchView(id) {
+        ['view-search', 'view-ingredients', 'view-steps', 'view-congrats'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    window.addEventListener('load', () => {
+        updateFavUI();
+        setTimeout(() => {
+            playStartJingle();
+            document.getElementById('splash-screen').style.opacity = '0';
+            document.getElementById('main-app').classList.add('app-visible');
+            setTimeout(() => document.getElementById('splash-screen').classList.add('hidden'), 800);
+        }, 1500);
+    });
+</script>
+</body>
+</html>
